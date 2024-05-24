@@ -3,7 +3,7 @@ import os
 from together import Together
 
 # App title
-st.set_page_config(page_title="🦙💬 Llama 2 Chatbot")
+st.set_page_config(page_title="💬 AI Chatbot")
 
 # Add custom CSS for buttons
 st.markdown(
@@ -33,8 +33,8 @@ st.markdown(
 
 # Together API API Key
 with st.sidebar:
-    st.title('🦙💬 Llama 2 Chatbot')
-    st.write('This chatbot is created using the open-source Llama 2 LLM model from Meta.')
+    st.title('💬 AI Chatbot')
+    st.write('This chatbot is created using the open-source Models.')
 
     if 'TOGETHER_API_KEY' in st.secrets:
         st.success('API key already provided!', icon='✅')
@@ -57,14 +57,14 @@ models = client.models.list()
 model_names = [model.id for model in models]
 model_context_lengths = {model.id: model.context_length for model in models}
 
-st.subheader('Choose a model')
+st.subheader('Chat Here')
 selected_model = st.sidebar.selectbox('Choose a model', model_names, key='selected_model')
 
 temperature = st.sidebar.slider('temperature', min_value=0.01, max_value=1.0, value=0.1, step=0.01)
 top_p = st.sidebar.slider('top_p', min_value=0.01, max_value=1.0, value=0.9, step=0.01)
 max_length = st.sidebar.slider('max_length', min_value=32, max_value=model_context_lengths.get(selected_model, 2048), value=model_context_lengths.get(selected_model, 120), step=8, key='max_length')
 
-st.markdown('📖 Learn how to build this app in this [blog](https://blog.streamlit.io/how-to-build-a-llama-2-chatbot/)!')
+st.markdown('📖 Use it as you wish')
 
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
