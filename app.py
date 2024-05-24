@@ -5,6 +5,32 @@ from together import Together
 # App title
 st.set_page_config(page_title="🦙💬 Llama 2 Chatbot")
 
+# Add custom CSS for buttons
+st.markdown(
+    """
+    <style>
+    .chat-button {
+        background-color: #f0f0f5;
+        border: 1px solid #ccc;
+        color: #333;
+        border-radius: 5px;
+        padding: 5px 10px;
+        margin: 2px;
+        cursor: pointer;
+    }
+    .chat-button:hover {
+        background-color: #e0e0eb;
+    }
+    .chat-column {
+        display: inline-block;
+        vertical-align: top;
+        margin: 0 5px;
+    }
+    </style>
+    """, 
+    unsafe_allow_html=True
+)
+
 # Together API API Key
 with st.sidebar:
     st.title('🦙💬 Llama 2 Chatbot')
@@ -43,14 +69,13 @@ st.markdown('📖 Learn how to build this app in this [blog](https://blog.stream
 # Store LLM generated responses
 if "messages" not in st.session_state.keys():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
-
-# Display or clear chat messages
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+if "edit_mode" not in st.session_state:
+    st.session_state.edit_mode = -1
 
 def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
+    st.session_state.edit_mode = -1
+    st.experimental_rerun()
 
 st.sidebar.button('Clear Chat History', on_click=clear_chat_history)
 
@@ -76,6 +101,28 @@ def generate_llama2_response(prompt_input, temperature, top_p, max_length):
     )
 
     return response.choices[0].message.content
+
+# Display messages with edit and delete buttons
+for i, message in enumerate(st.session_state.messages):
+    with st.chat_message(message["role"]):
+        if st.session_state.edit_mode == i:
+            edited_message = st.text_input("Edit message:", value=message["content"], key=f"edited_message_{i}")
+            if st.button("Save", key=f"save_{i}"):
+                st.session_state.messages[i]["content"] = edited_message
+                st.session_state.edit_mode = -1
+                st.experimental_rerun()
+        else:
+            st.write(message["content"])
+            cols = st.columns([1, 1])
+            with cols[0]:
+                if st.button("Edit", key=f"edit_{i}", help="Edit this message"):
+                    st.session_state.edit_mode = i
+                    st.experimental_rerun()
+            with cols[1]:
+                if st.button("Delete", key=f"delete_{i}", help="Delete this message"):
+                    del st.session_state.messages[i]
+                    st.experimental_rerun()
+                    break
 
 # User-provided prompt
 if prompt := st.chat_input(disabled=not together_api_key):
