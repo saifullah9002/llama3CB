@@ -46,8 +46,9 @@ with st.sidebar:
 
     together_api_key = "06ae5e599e89f3dc4a8b52f53432c9811567c5341238b8479c96ff45d5861b88"
 
+
 # Initialize Together API client
-client = Together(api_key=together_api_key)
+client = Together(api_key="06ae5e599e89f3dc4a8b52f53432c9811567c5341238b8479c96ff45d5861b88")
 
 # Fetch available models from Together
 models = client.models.list()
@@ -159,6 +160,11 @@ def generate_llama2_response(prompt_input, temperature, top_p, max_length):
         else:
             string_dialogue += "Assistant: " + dict_message["content"] + "\n\n"
 
+    # Calculate input tokens length
+    input_tokens_length = len(string_dialogue.split())
+    # Adjust max_tokens to ensure it does not exceed the model's total limit
+    adjusted_max_tokens = min(max_length, 8193 - input_tokens_length)
+
     messages = [{"role": "user", "content": f"{string_dialogue} {prompt_input} Assistant:"}]
 
     response = client.chat.completions.create(
@@ -166,7 +172,7 @@ def generate_llama2_response(prompt_input, temperature, top_p, max_length):
         messages=messages,
         temperature=temperature,
         top_p=top_p,
-        max_tokens=max_length,
+        max_tokens=adjusted_max_tokens,
         repetition_penalty=1.0
     )
 
@@ -180,29 +186,13 @@ for i, message in enumerate(st.session_state.messages):
         with edit_col:
             if st.button("✏️", key=f"edit_{i}", help="Edit this message", use_container_width=True):
                 st.session_state.edit_mode = i
+                st.experimental_rerun()
         with delete_col:
             if st.button("🗑️", key=f"delete_{i}", help="Delete this message", use_container_width=True):
                 del st.session_state.messages[i]
                 st.session_state.edit_mode = -1
                 st.experimental_rerun()
                 break
-
-# Edit message modal using expander and form
-if st.session_state.edit_mode != -1:
-    with st.expander("Edit Message", expanded=True):
-        with st.form("edit_message_form"):
-            role = st.session_state.messages[st.session_state.edit_mode]["role"]
-            st.subheader(f"Edit {role} message")
-            edited_message = st.text_area("Message", value=st.session_state.messages[st.session_state.edit_mode]["content"])
-            save_button = st.form_submit_button("💾 Save")
-            cancel_button = st.form_submit_button("Cancel")
-            if save_button:
-                st.session_state.messages[st.session_state.edit_mode]["content"] = edited_message
-                st.session_state.edit_mode = -1
-                st.experimental_rerun()
-            elif cancel_button:
-                st.session_state.edit_mode = -1
-                st.experimental_rerun()
 
 # User-provided prompt
 if prompt := st.chat_input(disabled=not together_api_key):
