@@ -46,9 +46,8 @@ with st.sidebar:
 
     together_api_key = "06ae5e599e89f3dc4a8b52f53432c9811567c5341238b8479c96ff45d5861b88"
 
-
 # Initialize Together API client
-client = Together(api_key="06ae5e599e89f3dc4a8b52f53432c9811567c5341238b8479c96ff45d5861b88")
+client = Together(api_key=together_api_key)
 
 # Fetch available models from Together
 models = client.models.list()
@@ -142,6 +141,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = -1
+if "edit_text" not in st.session_state:
+    st.session_state.edit_text = ""
 
 def clear_chat_history():
     st.session_state.messages = [{"role": "assistant", "content": "How may I assist you today?"}]
@@ -181,18 +182,30 @@ def generate_llama2_response(prompt_input, temperature, top_p, max_length):
 # Display messages with edit and delete buttons
 for i, message in enumerate(st.session_state.messages):
     with st.chat_message(message["role"]):
-        st.write(message["content"])
-        edit_col, delete_col = st.columns([1, 1])
-        with edit_col:
-            if st.button("✏️", key=f"edit_{i}", help="Edit this message", use_container_width=True):
-                st.session_state.edit_mode = i
-                st.experimental_rerun()
-        with delete_col:
-            if st.button("🗑️", key=f"delete_{i}", help="Delete this message", use_container_width=True):
-                del st.session_state.messages[i]
+        if st.session_state.edit_mode == i:
+            # If in edit mode, display a text area with the current message content
+            st.session_state.edit_text = st.text_area("Edit Message", value=message["content"], key=f"edit_text_{i}")
+            if st.button("Save", key=f"save_{i}"):
+                st.session_state.messages[i]["content"] = st.session_state.edit_text
                 st.session_state.edit_mode = -1
                 st.experimental_rerun()
-                break
+            if st.button("Cancel", key=f"cancel_{i}"):
+                st.session_state.edit_mode = -1
+                st.experimental_rerun()
+        else:
+            # Display the message content and edit/delete buttons
+            st.write(message["content"])
+            edit_col, delete_col = st.columns([1, 1])
+            with edit_col:
+                if st.button("✏️", key=f"edit_{i}", help="Edit this message", use_container_width=True):
+                    st.session_state.edit_mode = i
+                    st.experimental_rerun()
+            with delete_col:
+                if st.button("🗑️", key=f"delete_{i}", help="Delete this message", use_container_width=True):
+                    del st.session_state.messages[i]
+                    st.session_state.edit_mode = -1
+                    st.experimental_rerun()
+                    break
 
 # User-provided prompt
 if prompt := st.chat_input(disabled=not together_api_key):
@@ -208,3 +221,4 @@ if prompt := st.chat_input(disabled=not together_api_key):
                 st.write(response)
                 message = {"role": "assistant", "content": response}
                 st.session_state.messages.append(message)
+
